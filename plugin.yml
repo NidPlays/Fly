@@ -6,8 +6,8 @@ api: 2.0.0
 commands:
   fly:
     description: Toggle Flight Mode
-    permission: pk.fly
+    permission: fly.command
 permissions:
-    pk.fly:
-        default: op
-        description: "Allow use of /fly command"
+  fly.command:
+    default: false
+    description: "Allow use of /fly command"

@@ -1,7 +1,7 @@
 <?php
-
 namespace Fly;
 
+use pocketmine\event\entity\EntityDamageByChildEntityEvent;
 use pocketmine\event\Listener;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Player;
@@ -13,82 +13,90 @@ use pocketmine\event\player\PlayerQuitEvent;
 use pocketmine\event\entity\EntityDamageEvent;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
 
+class Fly extends PluginBase implements Listener
+{
+	const FLY_ENABLE = 1;
+	const FLY_TOGGLE = 2;
+	const FLY_DISABLE = 3;
+	private $falling = [];
 
-class Fly extends PluginBase implements Listener{
-
-    public $flying;
-    public $antiDamage;    
-
-public function onEnable(){
-		$this->getLogger()->info(TextFormat::GREEN."Fly Plugin for PKRealms has been Enabled!");
+	public function onEnable()
+	{
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
+	}
 
-		$this->flying = [];
-		$this->antiDamage = [];
-	}
-	
-	public function onDisable(){
-		$this->getLogger()->info(TextFormat::RED."Fly Plugin for PKRealms has been Disabled!!");
-	}
-	
-	 
-public function onQuit(PlayerQuitEvent $event){
-	$name = $event->getPlayer()->getName();
-	if(isset($this->flying[$name])){
-		unset($this->flying[$name]);
-		unset($this->antiDamage[$name]);
-	}
-}
+	public function onDisable()
+	{
 
-public function onCommand(CommandSender $sender, Command $command, $label, array $args){
-		if(strtolower($command->getName('fly'))){
-			if($sender->hasPermission("fly.command")){
-				$this->toggleFly($sender);
+	}
+
+
+	public function onQuit(PlayerQuitEvent $event)
+	{
+		if (isset($this->falling[$event->getPlayer()->getName()])) unset($this->falling[$event->getPlayer()->getName()]);
+	}
+
+	public function onCommand(CommandSender $sender, Command $command, $label, array $args)
+	{
+		if (strtolower($command->getName()) == 'fly' AND $sender->hasPermission("fly.command") AND $sender instanceof Player) {
+			if (empty($args[1])) {
+				switch ($args[1]) {
+					case "on":
+					case "enable":
+						$this->fly($sender, self::FLY_ENABLE);
+						break;
+					case "off":
+					case "disable":
+						$this->fly($sender, self::FLY_DISABLE);
+						break;
+					case "toggle":
+					case "switch":
+						$this->fly($sender, self::FLY_TOGGLE);
+						break;
+					default:
+						$this->fly($sender, self::FLY_TOGGLE);
+						break;
+				}
+			} else {
+				$this->fly($sender, self::FLY_TOGGLE);
 			}
+		}
 	}
-}
 
-public function toggleFly(Player $p){
-
-	if(isset($this->flying[$p->getName()])){
-		unset($this->flying[$p->getName()]);
-		$p->sendMessage("§6PKFactions >> §cFly has been Disabled");
-		$p->setAllowFlight(false);
-	}else{
-		$this->flying[$p->getName()] = $p;
-		$p->sendMessage("§6PKFactions >> §aFly has been Enabled");
-		$p->setAllowFlight(true);
-		$this->antiDamage[$p->getName()] = $p;
+	public function fly(Player $player, $state = self::FLY_TOGGLE, $addFalling = true)
+	{
+		if ($player->getAllowFlight() AND $state == self::FLY_TOGGLE) $state = self::FLY_DISABLE; else $state = self::FLY_ENABLE;
+		switch ($state) {
+			case self::FLY_ENABLE:
+				$player->sendMessage(TextFormat::GREEN . ">> Fly has been Enabled");
+				$player->setAllowFlight(true);
+				break;
+			case self::FLY_DISABLE;
+				$player->sendMessage(TextFormat::RED . ">> Fly has been Disabled");
+				$player->setAllowFlight(false);
+				if ($addFalling) $this->falling[$player->getName()] = $player;
+				break;
+		}
 	}
-}
 
-public function onDamage(EntityDamageEvent $event){
-	$player = $event->getEntity();
-	if ($player instanceof Player){
-	$cause = $event->getCause();
-    if(isset($this->flying[$player->getName()]) OR isset($this->antiDamage[$player->getName()])){
-    if($cause === EntityDamageEvent::CAUSE_FALL){
-    if(isset($this->flying[$player->getName()])){
-    	$event->setCancelled(true);
-    	$this->toggleFly($player);
-    }
+	public function onDamage(EntityDamageEvent $event)
+	{
+		if ($player = $event->getEntity() AND $player instanceof Player) {
+			if ($event->getCause() === EntityDamageEvent::CAUSE_FALL AND isset($this->falling[$player->getName()])) {
+				unset($this->falling[$player->getName()]);
+				$event->setCancelled(true);
+				$this->fly($player, self::FLY_DISABLE, false);
+			} else $this->fly($player, self::FLY_DISABLE);
+		}
+		if ($event instanceof EntityDamageByEntityEvent) {
+			$attacker = $event->getDamager();
+			$attacked = $event->getEntity();
+			if ($attacker instanceof Player) {
+				$this->fly($player, self::FLY_DISABLE);
+			}
+			if ($attacked instanceof Player) {
+				$this->fly($player, self::FLY_DISABLE);
+			}
+		}
 	}
-}
-    if(isset($this->antiDamage[$player->getName()]) && !isset($this->flying[$player->getName()])){
-    	$event->setCancelled(true);
-    	unset($this->antiDamage[$player->getName()]);
-    }
-  }else{
-	  $cause = $event->getEntity()->getLastDamageCause();
-  	  $issuer = $cause->getDamager();
-    	if($issuer instanceof Player){
-    		if(isset($this->flying[$player])){
-    			$this->toggleFly($player);
-    		}
-    		if(isset($this->flying[$issuer])){
-    			$this->toggleFly($issuer);
-    		}
-    	}
-}
-}
 }
