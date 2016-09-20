@@ -25,12 +25,6 @@ class Fly extends PluginBase implements Listener
 		$this->getServer()->getPluginManager()->registerEvents($this, $this);
 	}
 
-	public function onDisable()
-	{
-
-	}
-
-
 	public function onQuit(PlayerQuitEvent $event)
 	{
 		if (isset($this->falling[$event->getPlayer()->getName()])) unset($this->falling[$event->getPlayer()->getName()]);
@@ -91,12 +85,8 @@ class Fly extends PluginBase implements Listener
 		if ($event instanceof EntityDamageByEntityEvent) {
 			$attacker = $event->getDamager();
 			$attacked = $event->getEntity();
-			if ($attacker instanceof Player) {
-				$this->fly($player, self::FLY_DISABLE);
-			}
-			if ($attacked instanceof Player) {
-				$this->fly($player, self::FLY_DISABLE);
-			}
+			if ($attacker instanceof Player) $this->fly($player, self::FLY_DISABLE);
+			if ($attacked instanceof Player) $this->fly($player, self::FLY_DISABLE);
 		}
 	}
 }
