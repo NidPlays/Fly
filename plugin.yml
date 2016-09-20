@@ -1,0 +1,13 @@
+name: Fly
+main: Fly\Fly
+author: pk
+version: 1.0
+api: 2.0.0
+commands:
+  fly:
+    description: Toggle Flight Mode
+    permission: pk.fly
+permissions:
+    pk.fly:
+        default: op
+        description: "Allow use of /fly command"
