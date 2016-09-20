@@ -32,6 +32,14 @@ class Fly extends PluginBase implements Listener
 
 	public function onCommand(CommandSender $sender, Command $command, $label, array $args)
 	{
+		if (!$sender instanceof Player) {
+			$sender->sendMessage("You can only run this command as player");
+			return;
+		}
+		if (!$sender->hasPermission("fly.command")) {
+			$sender->sendMessage("You do not have sufficient permission");
+			return;
+		}
 		if (strtolower($command->getName()) == 'fly' AND $sender->hasPermission("fly.command") AND $sender instanceof Player) {
 			if (empty($args[1])) {
 				switch ($args[1]) {

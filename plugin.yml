@@ -9,5 +9,5 @@ commands:
     permission: fly.command
 permissions:
   fly.command:
-    default: false
+    default: op
     description: "Allow use of /fly command"
